@@ -1,4 +1,30 @@
+# Java / Maven
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.hprof
+hs_err_pid*
+replay_pid*
 
+# Maven
+.mvn/timing.properties
+dependency-reduced-pom.xml
 
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+*.swp
 
+# OS
+.DS_Store
+
+# Local tooling
 .codegraph/
+*.log
