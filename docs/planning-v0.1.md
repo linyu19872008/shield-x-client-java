@@ -592,21 +592,15 @@ core **不依赖 Spring**；非 Spring 网关可以只用 core。
 
 ## 13. 待确认
 
-| # | 事项 | 当前建议 |
+| # | 事项 | 当前状态 |
 |---|---|---|
-| 1 | License | 公开前定，建议 MIT |
-| 2 | Starter 是否首期做 | 二期 |
-| 3 | template 模块是否首期做 | 建议做，独立 artifact |
-| 4 | 发布渠道 | 先 GitHub Packages，稳定后 Maven Central |
-| 5 | Java 目标 | 17（JDK 21 构建） |
-| 6 | 是否公开仓库 | 公开 SDK 建议 public |
-| 7 | Probe 固定到哪个 shield-x 版本 | 通过 `agent-v1` 验收的 tag/commit |
-| 8 | Jackson 基线 | 2.15 兼容 API；CI 兼验 2.17 |
-| 9 | at-least-once + 重复事件是否可接受 | 需与网关/服务端确认 |
-| 10 | `event_id` 是否由网关稳定生成 | 是；SDK 不生成、不改写 |
-| 11 | Maven Central 命名空间 | 验证 `io.github.linyu19872008` 归属 |
+| 1 | 发布渠道 | 先 GitHub Packages；Maven Central 待定 |
+| 2 | 仓库可见性 | 公开 SDK 建议 public；当前仍为 private |
+| 3 | at-least-once + 重复事件 | 需与 gateway/服务端确认可接受 |
+| 4 | Maven Central 命名空间 | 发布前验证 `io.github.linyu19872008` 归属 |
+| 5 | P8/P9 的 CI 环境 | P8 需限流；P9 已通过种子策略执行 |
 
----
+已关闭：包名/坐标、Java 17、License（MIT）、Starter、template、probe 版本固定。
 
 ## 附录 A：接口与请求头
 

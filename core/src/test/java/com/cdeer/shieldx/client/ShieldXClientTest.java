@@ -3,6 +3,7 @@ package com.cdeer.shieldx.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.cdeer.shieldx.error.BatchTooLargeException;
 import com.cdeer.shieldx.error.ShieldXException;
 import com.cdeer.shieldx.error.TransportException;
 import com.cdeer.shieldx.model.Event;
@@ -16,6 +17,7 @@ import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import okhttp3.mockwebserver.MockResponse;
@@ -91,6 +93,28 @@ class ShieldXClientTest {
 
     assertThat(result.notModified()).isTrue();
     assertThat(result.revision()).isEqualTo(41);
+  }
+
+  @Test
+  void fetchPolicies304WithoutEtagFallsBackToSinceRevision() {
+    server.enqueue(new MockResponse().setResponseCode(304));
+
+    ShieldXClient client = clientBuilder().build();
+    PoliciesResult result = client.fetchPolicies(12);
+
+    assertThat(result.notModified()).isTrue();
+    assertThat(result.revision()).isEqualTo(12);
+  }
+
+  @Test
+  void fetchPoliciesInvalidEtagFallsBackToSinceRevision() {
+    server.enqueue(new MockResponse().setResponseCode(304).addHeader("ETag", "W/not-a-revision"));
+
+    ShieldXClient client = clientBuilder().build();
+    PoliciesResult result = client.fetchPolicies(5);
+
+    assertThat(result.notModified()).isTrue();
+    assertThat(result.revision()).isEqualTo(5);
   }
 
   @Test
@@ -259,6 +283,18 @@ class ShieldXClientTest {
     JsonNode eventNode = root.get("events").get(0);
     assertThat(eventNode.has("matched_policy_id")).isTrue();
     assertThat(eventNode.get("matched_policy_id").isNull()).isTrue();
+  }
+
+  @Test
+  void reportEventsRejectsMoreThanOneThousandEvents() {
+    List<Event> events = new ArrayList<>();
+    for (int i = 0; i < 1001; i++) {
+      events.add(validEvent());
+    }
+    ShieldXClient client = clientBuilder().build();
+
+    assertThatThrownBy(() -> client.reportEvents(new EventBatch(39, 1, null, events)))
+        .isInstanceOf(BatchTooLargeException.class);
   }
 
   @Test
