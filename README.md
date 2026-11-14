@@ -5,7 +5,7 @@
 
 Java client for the **shield-x** `agent-v1` gateway contract.
 
-> 状态：`0.1.x` 开发中。SDK 只负责协议与传输；策略求值、模板渲染与拦截执行仍由网关负责。
+> 状态：`v0.1.0` 已发布（SDK 侧）；gateway 尚未接入。SDK 只负责协议与传输；策略求值、模板渲染与拦截执行仍由网关负责。
 
 - 包名：`com.cdeer.shieldx`（长期冻结）
 - Maven：`io.github.linyu19872008:shield-x-client-java`

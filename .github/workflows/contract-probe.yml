@@ -36,6 +36,8 @@ jobs:
         with:
           repository: linyu19872008/shield-x
           path: shield-x
+          # 固定到通过 agent-v1 验收的提交；契约变化时手动更新
+          ref: 11ebe21f465610b9d4d7ddf935d97a037a41f555
           ssh-key: ${{ secrets.SHIELDX_READ_KEY }}
 
       - name: checkout client-go
@@ -43,6 +45,7 @@ jobs:
         with:
           repository: linyu19872008/shield-x-client-go
           path: client-go
+          ref: 300567068f3c3dfc2753185d987a071a1241ebba
           ssh-key: ${{ secrets.CLIENT_GO_READ_KEY }}
 
       - uses: actions/setup-go@v5
