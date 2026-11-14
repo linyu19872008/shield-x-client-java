@@ -9,10 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Maven multi-module build and Maven Wrapper.
-- Core `ShieldXClient` for `agent-v1` policies, templates and event reporting.
-- Optional poller, reporter and disk spool.
-- Contract probe and CI workflows.
-- Spring Boot starter and optional template renderer.
-
-[Unreleased]: https://github.com/linyu19872008/shield-x-client-java/commits/main
+- Maven multi-module build, Maven Wrapper, Spotless, JaCoCo and Enforcer.
+- Core `ShieldXClient`: policies, templates, event reporting, ETag/304, JSON/NDJSON, gzip.
+- Contract models with forward-compatible `JsonNode` values and null tri-state validation.
+- Optional `Poller`, `Reporter` and `FileSpool` with bounded queue, backoff and replay.
+- Spring Boot starter with properties, lifecycle, Health and Micrometer gauges.
+- Optional `shield-x-template` reference renderer passing all 14 conformance vectors.
+- Raw HTTP contract probe and self-contained probe CI.
+- MIT license, security policy and contribution guide.

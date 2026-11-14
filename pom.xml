@@ -23,6 +23,9 @@
 
   <modules>
     <module>core</module>
+    <module>spring-boot-starter</module>
+    <module>template</module>
+    <module>examples/gateway-minimal</module>
   </modules>
 
   <properties>

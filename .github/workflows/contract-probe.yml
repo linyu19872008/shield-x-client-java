@@ -1,0 +1,60 @@
+name: Contract Probe
+
+on:
+  workflow_dispatch:
+  schedule:
+    # daily at 18:00 UTC (02:00 Asia/Shanghai)
+    - cron: "0 18 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: "11111111"
+          MYSQL_DATABASE: shield_x_java_probe
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -p11111111"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: checkout Java SDK
+        uses: actions/checkout@v4
+
+      - name: checkout shield-x
+        uses: actions/checkout@v4
+        with:
+          repository: linyu19872008/shield-x
+          path: shield-x
+          ssh-key: ${{ secrets.SHIELDX_READ_KEY }}
+
+      - name: checkout client-go
+        uses: actions/checkout@v4
+        with:
+          repository: linyu19872008/shield-x-client-go
+          path: client-go
+          ssh-key: ${{ secrets.CLIENT_GO_READ_KEY }}
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: shield-x/go.mod
+          cache: false
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: run self-contained probe
+        run: ./scripts/probe-ci.sh
