@@ -1,0 +1,36 @@
+{
+  "revision": 39,
+  "generated_at": "2026-11-14T00:20:59+08:00",
+  "policy_count": 2,
+  "filtered_out": 0,
+  "policies": [
+    {
+      "id": "pol_01",
+      "version": 3,
+      "name": "封禁恶意爬虫 IP 段",
+      "priority": 1000,
+      "match": {
+        "all": [
+          { "field": "ip", "op": "in_cidr", "value": ["203.0.113.0/24"] }
+        ]
+      },
+      "action": {
+        "type": "block",
+        "params": { "template_id": "tpl_01", "status_code": 403 }
+      }
+    },
+    {
+      "id": "pol_02",
+      "version": 1,
+      "name": "sqlmap UA 观察",
+      "priority": 500,
+      "match": {
+        "any": [
+          { "field": "ua", "op": "contains", "value": "sqlmap" },
+          { "field": "path", "op": "prefix", "value": "/admin" }
+        ]
+      },
+      "action": { "type": "observe" }
+    }
+  ]
+}
