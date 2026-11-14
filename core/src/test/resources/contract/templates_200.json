@@ -1,0 +1,21 @@
+{
+  "revision": 39,
+  "templates": [
+    {
+      "id": "tpl_01",
+      "name": "默认 403 拦截页",
+      "version": 2,
+      "checksum": "sha256:e7eae5908abbed286765442dcc6aacb9607099002c7c4c401c04f50dcf04da85",
+      "content_type": "text/html; charset=utf-8",
+      "status_code": 403,
+      "headers": {
+        "X-Frame-Options": "DENY",
+        "X-Content-Type-Options": "nosniff"
+      },
+      "content": "<!doctype html><html><body><p>访问被拦截，请求编号：{{request_id}}</p></body></html>",
+      "vars": {
+        "site_name": "示例站点"
+      }
+    }
+  ]
+}
