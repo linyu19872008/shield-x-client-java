@@ -29,10 +29,10 @@ jobs:
 
     steps:
       - name: checkout Java SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: checkout shield-x
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: linyu19872008/shield-x
           path: shield-x
@@ -41,19 +41,19 @@ jobs:
           ssh-key: ${{ secrets.SHIELDX_READ_KEY }}
 
       - name: checkout client-go
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: linyu19872008/shield-x-client-go
           path: client-go
           ref: 300567068f3c3dfc2753185d987a071a1241ebba
           ssh-key: ${{ secrets.CLIENT_GO_READ_KEY }}
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: shield-x/go.mod
           cache: false
 
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: "17"
