@@ -1,7 +1,7 @@
 # shield-x-client-java 规划 v0.1
 
 > 状态：命名与坐标已确认；实现细节评审中
-> 范围：只开发 `shield-x-client-java` 仓库，不改 `gateway-v2` 代码  
+> 范围：只开发 `shield-x-client-java` 仓库，不改 `gateway` 代码
 > 契约：`agent-v1`  
 > 参考实现：`shield-x-client-go v0.1.1`
 
@@ -88,7 +88,7 @@ shield-x-client-java/
 │       └── spool/                       # 可选组件
 ├── spring-boot-starter/                 # artifact: shield-x-spring-boot-starter（二期）
 ├── template/                            # artifact: shield-x-template（可选）
-├── examples/gateway-minimal/            # 可运行示例，不依赖 gateway-v2
+├── examples/gateway-minimal/            # 可运行示例，不依赖 gateway
 ├── docs/
 └── .github/workflows/
 ```
@@ -426,7 +426,7 @@ core **不依赖 Spring**；非 Spring 网关可以只用 core。
 | P9 | 跨租户隔离（A/B 各至少一条不同策略，否则 Skip） |
 | P10 | 非法 body → 400 |
 
-**不依赖 gateway-v2**：所有测试都可以用真实 shield-x + 独立示例完成。
+**不依赖 gateway**：所有测试都可以用真实 shield-x + 独立示例完成。
 
 > 采样租户的 `accepted + rejected` 可能小于发送数（服务端对采样丢弃的事件不计数），
 > SDK/reporter 不能把差额当成丢数据告警。
@@ -442,7 +442,7 @@ core **不依赖 Spring**；非 Spring 网关可以只用 core。
 
 - unit 在每个 PR 跑；probe 在 nightly 与 release 前手动跑，避免 MySQL/Go 环境拖慢 PR。
 - probe 通过 read-only deploy key 读取 shield-x，不使用宽权限 PAT。
-- CI **不依赖 gateway-v2**。
+- CI **不依赖 gateway**。
 - 覆盖率目标：core 80% 行覆盖，reporter 70%；不达标先补测试，不靠排除规则。
 
 ### 8.2 Probe 版本固定
@@ -543,29 +543,29 @@ core **不依赖 Spring**；非 Spring 网关可以只用 core。
 | M3 | 自包含 probe CI（固定 shield-x tag）、示例、README/CHANGELOG、`v0.1.0` | 真实 shield-x + MySQL 探针通过；CI 绿；`v0.1.0` 可发布 | 2–3 天 |
 | M4 | Spring Boot Starter | 上下文启动、配置绑定、启停、Health 测试 | 2–3 天 |
 | M5 | `shield-x-template` + 14 向量 | 14/14 通过 | 1–2 天 |
-| M6 | gateway-v2 接入指南 | 文档评审通过；**不改 gateway-v2 代码** | 0.5–1 天 |
+| M6 | gateway 接入指南 | 文档评审通过；**不改 gateway 代码** | 0.5–1 天 |
 
 总计约 **2.5–3.5 周**。如果只有一周：完成 M0–M2 的最小闭环 + M3 的 probe，暂不做 Starter/template。
 
 ---
 
-## 11. gateway-v2 接入（后续，不在本计划实现）
+## 11. gateway 接入（后续，不在本计划实现）
 
-1. gateway-v2 引入 `io.github.linyu19872008:shield-x-client-java`；
+1. gateway 引入 `io.github.linyu19872008:shield-x-client-java`；
 2. 配置 base-url/token/gateway-id/agent-version/capabilities；
 3. 启动 poller，把快照交给现有策略引擎；
 4. 请求路径按策略执行，构造 `Event`，`reporter.enqueue`；
 5. 跑 24 项验收 + 14 条渲染向量；
 6. 观察 304 比例、队列深度、spool、丢弃数。
 
-注意：gateway-v2 是 WebFlux 响应式网关，SDK 的 poller/reporter 必须使用独立线程，不能在 event loop 上阻塞。
+注意：gateway 是 WebFlux 响应式网关，SDK 的 poller/reporter 必须使用独立线程，不能在 event loop 上阻塞。
 
 本计划的硬约束：
 
-- SDK 不 import Spring、WebFlux 或 gateway-v2 的任何类型；
-- 示例应用是独立的 Spring Boot 应用，不复制 gateway-v2 代码；
-- M6 只交付接入指南与配置示例，**不在本仓库修改 gateway-v2**；
-- SDK 的验收不依赖 gateway-v2，真实流量验收留到后续接入阶段。
+- SDK 不 import Spring、WebFlux 或 gateway 的任何类型；
+- 示例应用是独立的 Spring Boot 应用，不复制 gateway 代码；
+- M6 只交付接入指南与配置示例，**不在本仓库修改 gateway**；
+- SDK 的验收不依赖 gateway，真实流量验收留到后续接入阶段。
 
 ---
 
@@ -578,7 +578,7 @@ core **不依赖 Spring**；非 Spring 网关可以只用 core。
 | 重复事件 | 重试与 spool 补发是 at-least-once | 文档明确；`event_id` 由网关稳定生成；监控重复率 |
 | 队列满/关闭丢数据 | 丢最旧与 flush 超时会丢事件 | `dropped_total`、关闭超时指标、告警 |
 | Spool 泄露 PII | 事件可能含 IP/Header | 0700/0600、保留策略、磁盘加密由部署方负责 |
-| Jackson 版本冲突 | gateway-v2 的 Spring Boot BOM 可能降级 Jackson | core 只用 2.15 兼容 API；CI 用 Boot 3.2 BOM 验证 |
+| Jackson 版本冲突 | gateway 的 Spring Boot BOM 可能降级 Jackson | core 只用 2.15 兼容 API；CI 用 Boot 3.2 BOM 验证 |
 | WebFlux 阻塞 | 在 event loop 调阻塞 SDK 会拖垮网关 | 独立线程；接入指南明确 |
 | 公开仓库治理缺失 | 无 LICENSE/SECURITY/CI 会影响发布 | M0 补齐 |
 | Probe 使用 main | 服务端变动导致 Java CI 无故红 | 固定 shield-x tag/commit；contract version 校验 |

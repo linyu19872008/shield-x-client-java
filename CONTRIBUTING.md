@@ -1,5 +1,7 @@
 # Contributing
 
+**English** | [简体中文](CONTRIBUTING.zh-CN.md)
+
 ## Development
 
 Requirements: JDK 17+ and Maven 3.9+.

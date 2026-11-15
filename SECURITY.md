@@ -1,5 +1,7 @@
 # Security Policy
 
+**English** | [简体中文](SECURITY.zh-CN.md)
+
 ## Supported versions
 
 `0.1.x` is the initial line. Security fixes are applied to the latest release.

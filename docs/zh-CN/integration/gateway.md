@@ -1,6 +1,8 @@
-# gateway-v2 接入指南（SDK 侧）
+# gateway 接入指南（SDK 侧）
 
-> 状态：指南草案。**本仓库不修改 gateway-v2 代码**；本文只描述接入方需要做的事。
+[English](../../integration/gateway.md) | **简体中文**
+
+> 状态：指南草案。**本仓库不修改 gateway 代码**；本文只描述接入方需要做的事。
 > SDK：`io.github.linyu19872008:shield-x-client-java:0.1.0`
 > 契约：`agent-v1`
 
@@ -10,7 +12,7 @@
 
 | 项 | 要求 |
 |---|---|
-| Java | 17+（gateway-v2 是 Java 21，可直接使用） |
+| Java | 17+（gateway 是 Java 21，可直接使用） |
 | Spring Boot | 3.2.x（starter 的验证基线） |
 | shield-x | 已部署，base URL 含 `/shieldx` 前缀 |
 | 租户 | 已创建 Token，且网关具备稳定 `gatewayId` |
@@ -18,7 +20,7 @@
 
 需要先决定：
 
-- gateway-v2 是否使用 `shield-x-spring-boot-starter`，还是只用 core；
+- gateway 是否使用 `shield-x-spring-boot-starter`，还是只用 core；
 - 是否使用 `shield-x-template` 做拦截页渲染；
 - 观测口径（304 比例、队列深度、spool、丢弃）。
 
@@ -95,7 +97,7 @@ Starter 会创建：
 - `ShieldXLifecycle`（启动 poller → reporter，关闭 reporter → poller）
 - `ShieldXHealthIndicator` / `ShieldXMetrics`（依赖 Actuator/Micrometer）
 
-gateway-v2 中注入：
+gateway 中注入：
 
 ```java
 @Service
@@ -140,7 +142,7 @@ reporter.enqueue(event);
 ```
 
 **不要在 WebFlux event loop 上做阻塞调用。** `enqueue` 非阻塞；poller/reporter 使用自己的
-daemon 线程。gateway-v2 的过滤器只做内存判断 + `enqueue`。
+daemon 线程。gateway 的过滤器只做内存判断 + `enqueue`。
 
 ---
 
@@ -149,7 +151,7 @@ daemon 线程。gateway-v2 的过滤器只做内存判断 + `enqueue`。
 | 组件 | 职责 |
 |---|---|
 | `shield-x-client-java` | HTTP、304、编码、重试、spool、batch 元信息 |
-| gateway-v2 | 策略求值、first-match、动作执行、模板渲染、事件字段构造 |
+| gateway | 策略求值、first-match、动作执行、模板渲染、事件字段构造 |
 | `shield-x-template`（可选） | 参考渲染器，替 gateway 完成 HTML 转义/占位符 |
 | shield-x | 策略/模板下发、事件接收、控制台 |
 
@@ -159,7 +161,7 @@ SDK **不**提供策略引擎，也不替 gateway 决定 `fail_open` / `fail_clo
 
 ## 6. 验收清单
 
-在 gateway-v2 真实流量上至少验证：
+在 gateway 真实流量上至少验证：
 
 - [ ] 首拉 200，`revision` 与策略数正确，顺序不被 SDK 重排
 - [ ] 第二次拉取带 `If-None-Match`，服务端 304 时本地快照不变

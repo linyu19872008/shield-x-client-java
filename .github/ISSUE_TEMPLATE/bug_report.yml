@@ -1,0 +1,56 @@
+name: Bug report
+description: Report a reproducible problem (Chinese or English is welcome)
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please do not report security vulnerabilities here. See SECURITY.md.
+        安全问题请不要在这里报告，请参考 SECURITY.md。
+  - type: input
+    id: version
+    attributes:
+      label: SDK version
+      placeholder: v0.1.1 / 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime
+      description: Go version, or Java and Maven version
+      placeholder: go1.22 / Java 17 + Maven 3.9.9
+    validations:
+      required: true
+  - type: input
+    id: contract
+    attributes:
+      label: Contract version
+      placeholder: agent-v1
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal code or steps. Redact tokens, tenant data, and private URLs.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs (redacted)
+      render: shell
