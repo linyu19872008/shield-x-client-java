@@ -48,7 +48,7 @@ jobs:
           ref: 300567068f3c3dfc2753185d987a071a1241ebba
           ssh-key: ${{ secrets.CLIENT_GO_READ_KEY }}
 
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         with:
           go-version-file: shield-x/go.mod
           cache: false
