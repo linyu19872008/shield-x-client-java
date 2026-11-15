@@ -29,10 +29,10 @@ jobs:
 
     steps:
       - name: checkout Java SDK
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: checkout shield-x
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: linyu19872008/shield-x
           path: shield-x
@@ -41,7 +41,7 @@ jobs:
           ssh-key: ${{ secrets.SHIELDX_READ_KEY }}
 
       - name: checkout client-go
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: linyu19872008/shield-x-client-go
           path: client-go
