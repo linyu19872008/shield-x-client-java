@@ -1,7 +1,7 @@
 # shield-x-client-java 规划 v0.1
 
 > 状态：命名与坐标已确认；实现细节评审中
-> 范围：只开发 `shield-x-client-java` 仓库，不改 `gateway` 代码  
+> 范围：只开发 `shield-x-client-java` 仓库，不改 `gateway` 代码
 > 契约：`agent-v1`  
 > 参考实现：`shield-x-client-go v0.1.1`
 

@@ -1,5 +1,7 @@
 # gateway 接入指南（SDK 侧）
 
+[English](../../integration/gateway.md) | **简体中文**
+
 > 状态：指南草案。**本仓库不修改 gateway 代码**；本文只描述接入方需要做的事。
 > SDK：`io.github.linyu19872008:shield-x-client-java:0.1.0`
 > 契约：`agent-v1`

@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security report
+    url: https://github.com/linyu19872008/shield-x-client-java/security/advisories/new
+    about: Report a vulnerability privately; do not open a public issue.
