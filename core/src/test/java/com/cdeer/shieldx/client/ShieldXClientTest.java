@@ -22,8 +22,8 @@ import java.security.MessageDigest;
 import java.security.Signature;
 import java.security.interfaces.EdECPrivateKey;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import okhttp3.mockwebserver.MockResponse;
@@ -389,8 +389,7 @@ class ShieldXClientTest {
             .setResponseCode(202)
             .setBody("{\"accepted\":1,\"rejected\":0,\"server_time\":\"2026-11-17T15:00:00Z\"}"));
 
-    ShieldXClient client =
-        clientBuilder().signingKey(HexFormat.of().formatHex(seed)).build();
+    ShieldXClient client = clientBuilder().signingKey(HexFormat.of().formatHex(seed)).build();
     client.reportEvents(validBatch());
 
     RecordedRequest request = server.takeRequest();
@@ -411,8 +410,7 @@ class ShieldXClientTest {
 
     byte[] body = request.getBody().readByteArray();
     byte[] hash = MessageDigest.getInstance("SHA-256").digest(body);
-    String message =
-        t + "\nPOST\n" + request.getPath() + "\n" + HexFormat.of().formatHex(hash);
+    String message = t + "\nPOST\n" + request.getPath() + "\n" + HexFormat.of().formatHex(hash);
     Signature verifier = Signature.getInstance("Ed25519");
     verifier.initVerify(keyPair.getPublic());
     verifier.update(message.getBytes(StandardCharsets.UTF_8));

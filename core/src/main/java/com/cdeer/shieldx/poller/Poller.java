@@ -216,8 +216,7 @@ public final class Poller implements AutoCloseable {
       byId.remove(id);
     }
     List<Policy> merged = new ArrayList<>(byId.values());
-    merged.sort(
-        Comparator.comparingInt(Policy::priority).reversed().thenComparing(Policy::id));
+    merged.sort(Comparator.comparingInt(Policy::priority).reversed().thenComparing(Policy::id));
     return new PolicySnapshot(
         delta.revision(),
         delta.generatedAt(),

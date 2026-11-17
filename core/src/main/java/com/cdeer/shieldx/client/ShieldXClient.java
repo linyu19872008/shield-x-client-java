@@ -147,7 +147,8 @@ public final class ShieldXClient {
             .header("X-Shieldx-Gateway-Id", config.gatewayId())
             .POST(HttpRequest.BodyPublishers.ofByteArray(encoded.body()));
     if (config.signingKey() != null) {
-      request.header("X-Shieldx-Signature", signEvent(encoded.body(), endpoint("events/v1").getPath()));
+      request.header(
+          "X-Shieldx-Signature", signEvent(encoded.body(), endpoint("events/v1").getPath()));
     }
     if (encoded.contentEncoding() != null) {
       request.header(CONTENT_ENCODING, encoded.contentEncoding());

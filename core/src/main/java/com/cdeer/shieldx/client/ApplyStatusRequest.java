@@ -1,6 +1,9 @@
 package com.cdeer.shieldx.client;
 
-/** Explicit ACK/NACK payload. Gateway id, agent version, caps hash and timestamp are filled by the client. */
+/**
+ * Explicit ACK/NACK payload. Gateway id, agent version, caps hash and timestamp are filled by the
+ * client.
+ */
 public record ApplyStatusRequest(
     long appliedRevision,
     String status,
