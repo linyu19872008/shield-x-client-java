@@ -166,7 +166,8 @@ public final class Poller implements AutoCloseable {
 
   private void pollOnceInternal() {
     polls.incrementAndGet();
-    PoliciesResult result = client.fetchPolicies(revision);
+    final long since = revision;
+    PoliciesResult result = client.fetchPolicies(since);
     lastSuccess = Instant.now();
     lastError = null;
     if (result.notModified()) {
@@ -180,9 +181,12 @@ public final class Poller implements AutoCloseable {
 
     PoliciesResult effective = result;
     if (effective.snapshot() != null && effective.snapshot().isDelta()) {
-      if (snapshot == null) {
+      if (snapshot == null
+          || effective.snapshot().resyncRequired()
+          || effective.snapshot().baseRevision() != since) {
         revision = -1;
-        throw new IllegalStateException("received delta without a local base; forcing full resync");
+        throw new IllegalStateException(
+            "received delta without a matching base or with resync required; forcing full resync");
       }
       effective =
           new PoliciesResult(
