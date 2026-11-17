@@ -17,10 +17,16 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.Signature;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HexFormat;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
@@ -36,6 +42,7 @@ public final class ShieldXClient {
   private final ObjectMapper mapper;
   private final HttpClient httpClient;
   private final String capabilitiesHeader;
+  private final String capsHash;
 
   public ShieldXClient(ShieldXConfig config) {
     this.config = Objects.requireNonNull(config, "config");
@@ -48,6 +55,7 @@ public final class ShieldXClient {
                 .followRedirects(HttpClient.Redirect.NEVER)
                 .build();
     this.capabilitiesHeader = encodeCapabilities(config.capabilities());
+    this.capsHash = capabilitiesHeader == null ? "" : sha256Hex(capabilitiesHeader);
   }
 
   public static Builder builder() {
@@ -55,7 +63,13 @@ public final class ShieldXClient {
   }
 
   public PoliciesResult fetchPolicies(long sinceRevision) {
-    URI uri = endpoint("policies/v1");
+    String path = "policies/v1";
+    if (config.capabilities() != null
+        && config.capabilities().deltaSnapshot()
+        && sinceRevision > 0) {
+      path += "?since_revision=" + sinceRevision;
+    }
+    URI uri = endpoint(path);
     HttpRequest.Builder request = commonRequest(uri).GET().header("Accept", "application/json");
     request.header("X-Shieldx-Gateway-Id", config.gatewayId());
     if (capabilitiesHeader != null) {
@@ -63,6 +77,7 @@ public final class ShieldXClient {
     }
     if (sinceRevision >= 0) {
       request.header("If-None-Match", "\"rev-" + sinceRevision + "\"");
+      request.header("X-Shieldx-Applied-Revision", Long.toString(sinceRevision));
     }
 
     HttpResponse<InputStream> response = send(request.build());
@@ -129,7 +144,11 @@ public final class ShieldXClient {
     HttpRequest.Builder request =
         commonRequest(endpoint("events/v1"))
             .header("Content-Type", encoded.contentType())
+            .header("X-Shieldx-Gateway-Id", config.gatewayId())
             .POST(HttpRequest.BodyPublishers.ofByteArray(encoded.body()));
+    if (config.signingKey() != null) {
+      request.header("X-Shieldx-Signature", signEvent(encoded.body(), endpoint("events/v1").getPath()));
+    }
     if (encoded.contentEncoding() != null) {
       request.header(CONTENT_ENCODING, encoded.contentEncoding());
     }
@@ -152,11 +171,90 @@ public final class ShieldXClient {
   }
 
   private HttpRequest.Builder commonRequest(URI uri) {
-    return HttpRequest.newBuilder(uri)
-        .timeout(config.requestTimeout())
-        .header("Authorization", "Bearer " + config.resolveToken())
-        .header("User-Agent", config.userAgent())
-        .header("X-Shieldx-Agent-Version", config.agentVersion());
+    HttpRequest.Builder builder =
+        HttpRequest.newBuilder(uri)
+            .timeout(config.requestTimeout())
+            .header("Authorization", "Bearer " + config.resolveToken())
+            .header("User-Agent", config.userAgent())
+            .header("X-Shieldx-Agent-Version", config.agentVersion());
+    if (!capsHash.isEmpty()) {
+      builder.header("X-Shieldx-Caps-Hash", capsHash);
+    }
+    return builder;
+  }
+
+  /**
+   * Reports an explicit ACK/NACK for an applied policy revision.
+   *
+   * <p>Call after successfully applying a snapshot, or with {@code failed} plus an error code when
+   * applying failed. The console keeps the failed state until a later successful ACK.
+   */
+  public void reportApplyStatus(ApplyStatusRequest request) {
+    Objects.requireNonNull(request, "request");
+    if (request.appliedRevision() <= 0) {
+      throw new IllegalArgumentException("applied_revision must be positive");
+    }
+    if (!"applied".equals(request.status()) && !"failed".equals(request.status())) {
+      throw new IllegalArgumentException("status must be applied or failed");
+    }
+    Map<String, Object> body = new LinkedHashMap<>();
+    body.put("gateway_id", config.gatewayId());
+    body.put("agent_version", config.agentVersion());
+    body.put("applied_revision", request.appliedRevision());
+    body.put("status", request.status());
+    body.put("policy_count", request.policyCount());
+    body.put("template_count", request.templateCount());
+    body.put("duration_ms", request.durationMs());
+    body.put("applied_at", Instant.now().toString());
+    if (!capsHash.isEmpty()) {
+      body.put("caps_hash", capsHash);
+    }
+    if (request.errorCode() != null && !request.errorCode().isBlank()) {
+      body.put("error_code", request.errorCode());
+    }
+    if (request.errorDetail() != null && !request.errorDetail().isBlank()) {
+      body.put("error_detail", request.errorDetail());
+    }
+
+    byte[] raw;
+    try {
+      raw = mapper.writeValueAsBytes(body);
+    } catch (IOException e) {
+      throw new TransportException("failed to encode apply status", e);
+    }
+    HttpRequest httpRequest =
+        commonRequest(endpoint("gateways/v1/apply-status"))
+            .header("Content-Type", "application/json")
+            .POST(HttpRequest.BodyPublishers.ofByteArray(raw))
+            .build();
+    HttpResponse<InputStream> response = send(httpRequest);
+    if (response.statusCode() != 200) {
+      throw apiError(response);
+    }
+    closeQuietly(response);
+  }
+
+  private String signEvent(byte[] body, String path) {
+    try {
+      long ts = Instant.now().getEpochSecond();
+      byte[] hash = MessageDigest.getInstance("SHA-256").digest(body);
+      String message = ts + "\nPOST\n" + path + "\n" + HexFormat.of().formatHex(hash);
+      Signature signature = Signature.getInstance("Ed25519");
+      signature.initSign(config.signingKey());
+      signature.update(message.getBytes(StandardCharsets.UTF_8));
+      return "t=" + ts + ",v1=" + HexFormat.of().formatHex(signature.sign());
+    } catch (Exception e) {
+      throw new TransportException("failed to sign event", e);
+    }
+  }
+
+  private static String sha256Hex(String text) {
+    try {
+      MessageDigest digest = MessageDigest.getInstance("SHA-256");
+      return HexFormat.of().formatHex(digest.digest(text.getBytes(StandardCharsets.UTF_8)));
+    } catch (NoSuchAlgorithmException e) {
+      throw new IllegalStateException("SHA-256 unavailable", e);
+    }
   }
 
   private URI endpoint(String path) {
@@ -387,6 +485,11 @@ public final class ShieldXClient {
 
     public Builder objectMapper(ObjectMapper value) {
       config.objectMapper(value);
+      return this;
+    }
+
+    public Builder signingKey(String value) {
+      config.signingKey(value);
       return this;
     }
 
