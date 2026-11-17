@@ -16,8 +16,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
+import java.security.Signature;
+import java.security.interfaces.EdECPrivateKey;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.zip.GZIPInputStream;
 import okhttp3.mockwebserver.MockResponse;
@@ -320,6 +326,95 @@ class ShieldXClientTest {
 
     ShieldXClient client = clientBuilder().httpClient(httpClient).build();
     assertThat(client.fetchPolicies(-1).snapshot().policies()).isEmpty();
+  }
+
+  @Test
+  void reportApplyStatusSendsAck() throws Exception {
+    server.enqueue(new MockResponse().setResponseCode(200).setBody("{}"));
+    ShieldXClient client = clientBuilder().build();
+    client.reportApplyStatus(ApplyStatusRequest.applied(7, 3));
+
+    RecordedRequest request = server.takeRequest();
+    assertThat(request.getMethod()).isEqualTo("POST");
+    assertThat(request.getPath()).isEqualTo("/shieldx/gateways/v1/apply-status");
+    assertThat(request.getHeader("X-Shieldx-Caps-Hash")).isNotBlank();
+    JsonNode body = new ObjectMapper().readTree(request.getBody().readUtf8());
+    assertThat(body.get("gateway_id").asText()).isEqualTo("gw-test");
+    assertThat(body.get("applied_revision").asLong()).isEqualTo(7);
+    assertThat(body.get("status").asText()).isEqualTo("applied");
+    assertThat(body.get("policy_count").asInt()).isEqualTo(3);
+  }
+
+  @Test
+  void fetchPoliciesRequestsDeltaWhenCapabilityEnabled() throws Exception {
+    server.enqueue(
+        new MockResponse()
+            .setResponseCode(200)
+            .addHeader("Content-Type", "application/json")
+            .setBody(
+                "{\"revision\":6,\"snapshot\":\"delta\",\"base_revision\":5,"
+                    + "\"upserts\":[{\"id\":\"pol_new\",\"version\":1,\"name\":\"n\","
+                    + "\"priority\":10,\"match\":{\"all\":[{\"field\":\"ip\",\"op\":\"eq\","
+                    + "\"value\":\"1.2.3.4\"}]},\"action\":{\"type\":\"observe\"}}],"
+                    + "\"deletes\":[\"pol_old\"],\"policy_count\":1}"));
+
+    ShieldXClient client =
+        clientBuilder()
+            .capabilities(
+                Capabilities.builder()
+                    .actions("observe")
+                    .matchFields("ip")
+                    .maxRules(100)
+                    .deltaSnapshot(true)
+                    .applyAck(true)
+                    .build())
+            .build();
+    PoliciesResult result = client.fetchPolicies(5);
+
+    assertThat(result.snapshot().isDelta()).isTrue();
+    assertThat(result.snapshot().upserts()).hasSize(1);
+    assertThat(result.snapshot().deletes()).containsExactly("pol_old");
+    RecordedRequest request = server.takeRequest();
+    assertThat(request.getPath()).isEqualTo("/shieldx/policies/v1?since_revision=5");
+    assertThat(request.getHeader("X-Shieldx-Applied-Revision")).isEqualTo("5");
+  }
+
+  @Test
+  void reportEventsSignsBody() throws Exception {
+    KeyPairGenerator generator = KeyPairGenerator.getInstance("Ed25519");
+    KeyPair keyPair = generator.generateKeyPair();
+    byte[] seed = ((EdECPrivateKey) keyPair.getPrivate()).getBytes().orElseThrow();
+    server.enqueue(
+        new MockResponse()
+            .setResponseCode(202)
+            .setBody("{\"accepted\":1,\"rejected\":0,\"server_time\":\"2026-11-17T15:00:00Z\"}"));
+
+    ShieldXClient client = clientBuilder().signingKey(HexFormat.of().formatHex(seed)).build();
+    client.reportEvents(validBatch());
+
+    RecordedRequest request = server.takeRequest();
+    String header = request.getHeader("X-Shieldx-Signature");
+    assertThat(header).isNotBlank();
+    String t = null;
+    String v1 = null;
+    for (String part : header.split(",")) {
+      String[] kv = part.split("=", 2);
+      if (kv.length == 2 && kv[0].equals("t")) {
+        t = kv[1];
+      } else if (kv.length == 2 && kv[0].equals("v1")) {
+        v1 = kv[1];
+      }
+    }
+    assertThat(t).isNotBlank();
+    assertThat(v1).isNotBlank();
+
+    byte[] body = request.getBody().readByteArray();
+    byte[] hash = MessageDigest.getInstance("SHA-256").digest(body);
+    String message = t + "\nPOST\n" + request.getPath() + "\n" + HexFormat.of().formatHex(hash);
+    Signature verifier = Signature.getInstance("Ed25519");
+    verifier.initVerify(keyPair.getPublic());
+    verifier.update(message.getBytes(StandardCharsets.UTF_8));
+    assertThat(verifier.verify(HexFormat.of().parseHex(v1))).isTrue();
   }
 
   private ShieldXClient.Builder clientBuilder() {

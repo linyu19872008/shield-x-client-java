@@ -4,10 +4,16 @@ import com.cdeer.shieldx.client.PoliciesResult;
 import com.cdeer.shieldx.client.ShieldXClient;
 import com.cdeer.shieldx.client.TemplatesResult;
 import com.cdeer.shieldx.error.ShieldXException;
+import com.cdeer.shieldx.model.Policy;
 import com.cdeer.shieldx.model.PolicySnapshot;
 import com.cdeer.shieldx.model.TemplateSnapshot;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -160,7 +166,8 @@ public final class Poller implements AutoCloseable {
 
   private void pollOnceInternal() {
     polls.incrementAndGet();
-    PoliciesResult result = client.fetchPolicies(revision);
+    final long since = revision;
+    PoliciesResult result = client.fetchPolicies(since);
     lastSuccess = Instant.now();
     lastError = null;
     if (result.notModified()) {
@@ -172,11 +179,25 @@ public final class Poller implements AutoCloseable {
       return;
     }
 
-    revision = result.revision();
-    snapshot = result.snapshot();
+    PoliciesResult effective = result;
+    if (effective.snapshot() != null && effective.snapshot().isDelta()) {
+      if (snapshot == null
+          || effective.snapshot().resyncRequired()
+          || effective.snapshot().baseRevision() != since) {
+        revision = -1;
+        throw new IllegalStateException(
+            "received delta without a matching base or with resync required; forcing full resync");
+      }
+      effective =
+          new PoliciesResult(
+              effective.revision(), false, mergeDelta(snapshot, effective.snapshot()));
+    }
+    final PoliciesResult applied = effective;
+    revision = applied.revision();
+    snapshot = applied.snapshot();
     success.incrementAndGet();
     if (onSnapshot != null) {
-      call(() -> onSnapshot.accept(result.snapshot()));
+      call(() -> onSnapshot.accept(applied.snapshot()));
     }
     if (fetchTemplates) {
       try {
@@ -185,6 +206,32 @@ public final class Poller implements AutoCloseable {
         reportError(e);
       }
     }
+  }
+
+  private static PolicySnapshot mergeDelta(PolicySnapshot base, PolicySnapshot delta) {
+    Map<String, Policy> byId = new LinkedHashMap<>();
+    for (Policy policy : base.policies()) {
+      byId.put(policy.id(), policy);
+    }
+    for (Policy policy : delta.upserts()) {
+      byId.put(policy.id(), policy);
+    }
+    for (String id : delta.deletes()) {
+      byId.remove(id);
+    }
+    List<Policy> merged = new ArrayList<>(byId.values());
+    merged.sort(Comparator.comparingInt(Policy::priority).reversed().thenComparing(Policy::id));
+    return new PolicySnapshot(
+        delta.revision(),
+        delta.generatedAt(),
+        merged.size(),
+        delta.filteredOut(),
+        merged,
+        "full",
+        0,
+        List.of(),
+        List.of(),
+        false);
   }
 
   private void fetchTemplates() {

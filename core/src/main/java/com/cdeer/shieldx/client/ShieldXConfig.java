@@ -8,7 +8,12 @@ import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.net.URI;
 import java.net.http.HttpClient;
+import java.security.KeyFactory;
+import java.security.PrivateKey;
+import java.security.spec.EdECPrivateKeySpec;
+import java.security.spec.NamedParameterSpec;
 import java.time.Duration;
+import java.util.HexFormat;
 import java.util.Objects;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
@@ -30,6 +35,7 @@ public final class ShieldXConfig {
   private final long maxResponseBytes;
   private final String userAgent;
   private final ObjectMapper objectMapper;
+  private final PrivateKey signingKey;
 
   private ShieldXConfig(Builder builder) {
     this.baseUrl = normalizeBaseUrl(builder.baseUrl);
@@ -54,6 +60,7 @@ public final class ShieldXConfig {
             ? "shield-x-client-java/" + Version.version()
             : builder.userAgent;
     this.objectMapper = builder.objectMapper == null ? defaultObjectMapper() : builder.objectMapper;
+    this.signingKey = parseSigningKey(builder.signingKey);
 
     if (builder.token != null && builder.tokenSupplier != null) {
       throw new IllegalArgumentException("token and tokenSupplier are mutually exclusive");
@@ -124,6 +131,31 @@ public final class ShieldXConfig {
     return objectMapper;
   }
 
+  public PrivateKey signingKey() {
+    return signingKey;
+  }
+
+  private static PrivateKey parseSigningKey(String value) {
+    if (value == null || value.isBlank()) {
+      return null;
+    }
+    byte[] seed;
+    try {
+      seed = HexFormat.of().parseHex(value.trim());
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException("signingKey must be 32-byte Ed25519 seed hex", e);
+    }
+    if (seed.length != 32) {
+      throw new IllegalArgumentException("signingKey must be 32-byte Ed25519 seed hex");
+    }
+    try {
+      return KeyFactory.getInstance("Ed25519")
+          .generatePrivate(new EdECPrivateKeySpec(NamedParameterSpec.ED25519, seed));
+    } catch (Exception e) {
+      throw new IllegalArgumentException("failed to load Ed25519 signing key", e);
+    }
+  }
+
   String resolveToken() {
     String token = tokenSupplier.get();
     if (token == null || token.isBlank()) {
@@ -187,6 +219,7 @@ public final class ShieldXConfig {
     private long maxResponseBytes = DEFAULT_MAX_RESPONSE_BYTES;
     private String userAgent;
     private ObjectMapper objectMapper;
+    private String signingKey;
 
     private Builder() {}
 
@@ -247,6 +280,11 @@ public final class ShieldXConfig {
 
     public Builder objectMapper(ObjectMapper value) {
       this.objectMapper = value;
+      return this;
+    }
+
+    public Builder signingKey(String value) {
+      this.signingKey = value;
       return this;
     }
 

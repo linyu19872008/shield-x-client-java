@@ -17,7 +17,9 @@ public record Capabilities(
     @JsonProperty("block_templates") boolean blockTemplates,
     @JsonProperty("template_spec_version") int templateSpecVersion,
     @JsonProperty("max_rules") int maxRules,
-    @JsonProperty("supports_rate_limit") boolean supportsRateLimit) {
+    @JsonProperty("supports_rate_limit") boolean supportsRateLimit,
+    @JsonProperty("delta_snapshot") boolean deltaSnapshot,
+    @JsonProperty("apply_ack") boolean applyAck) {
 
   public Capabilities {
     actions = actions == null ? List.of() : List.copyOf(actions);
@@ -70,6 +72,8 @@ public record Capabilities(
     private int templateSpecVersion;
     private int maxRules;
     private boolean supportsRateLimit;
+    private boolean deltaSnapshot;
+    private boolean applyAck;
 
     private Builder() {}
 
@@ -117,6 +121,16 @@ public record Capabilities(
       return this;
     }
 
+    public Builder deltaSnapshot(boolean value) {
+      this.deltaSnapshot = value;
+      return this;
+    }
+
+    public Builder applyAck(boolean value) {
+      this.applyAck = value;
+      return this;
+    }
+
     public Capabilities build() {
       Capabilities capabilities =
           new Capabilities(
@@ -125,7 +139,9 @@ public record Capabilities(
               blockTemplates,
               templateSpecVersion,
               maxRules,
-              supportsRateLimit);
+              supportsRateLimit,
+              deltaSnapshot,
+              applyAck);
       capabilities.validate();
       return capabilities;
     }
