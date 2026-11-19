@@ -20,7 +20,7 @@ public final class MinimalGateway {
     String baseUrl = env("SHIELD_X_BASE_URL", "http://127.0.0.1:8080/shieldx");
     String token = System.getenv("SHIELD_X_TOKEN");
     if (token == null || token.isBlank()) {
-      System.err.println("set SHIELD_X_TOKEN to a tenant token");
+      System.err.println("set SHIELD_X_TOKEN to a site token");
       return;
     }
     String gatewayId = env("SHIELD_X_GATEWAY_ID", "gw-example-01");

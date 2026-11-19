@@ -46,7 +46,7 @@ body:
     id: repro
     attributes:
       label: Reproduction
-      description: Minimal code or steps. Redact tokens, tenant data, and private URLs.
+      description: Minimal code or steps. Redact tokens, site data, and private URLs.
     validations:
       required: true
   - type: textarea

@@ -43,6 +43,7 @@ ShieldXClient client = ShieldXClient.builder()
 | `baseUrl` | Absolute `http(s)` URL including `/shieldx`; no userinfo/query/fragment |
 | `token` | Static token or `Supplier<String>` for rotation; never logged |
 | `gatewayId` | 1–64 chars of `[A-Za-z0-9._-]` |
+| `gatewayGroup` | Optional site-local group label (≤64 chars), sent as `X-Shieldx-Gateway-Group` |
 | `agentVersion` | Non-blank gateway version |
 | `capabilities` | Optional; validated before use |
 | `connectTimeout` | Default 3s |

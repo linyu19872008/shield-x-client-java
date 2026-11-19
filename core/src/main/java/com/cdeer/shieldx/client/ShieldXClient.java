@@ -178,6 +178,9 @@ public final class ShieldXClient {
             .header("Authorization", "Bearer " + config.resolveToken())
             .header("User-Agent", config.userAgent())
             .header("X-Shieldx-Agent-Version", config.agentVersion());
+    if (!config.gatewayGroup().isEmpty()) {
+      builder.header("X-Shieldx-Gateway-Group", config.gatewayGroup());
+    }
     if (!capsHash.isEmpty()) {
       builder.header("X-Shieldx-Caps-Hash", capsHash);
     }
@@ -446,6 +449,11 @@ public final class ShieldXClient {
 
     public Builder gatewayId(String value) {
       config.gatewayId(value);
+      return this;
+    }
+
+    public Builder gatewayGroup(String value) {
+      config.gatewayGroup(value);
       return this;
     }
 

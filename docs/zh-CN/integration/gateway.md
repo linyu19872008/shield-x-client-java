@@ -15,7 +15,7 @@
 | Java | 17+（gateway 是 Java 21，可直接使用） |
 | Spring Boot | 3.2.x（starter 的验证基线） |
 | shield-x | 已部署，base URL 含 `/shieldx` 前缀 |
-| 租户 | 已创建 Token，且网关具备稳定 `gatewayId` |
+| 站点 | 已创建 Token，且网关具备稳定 `gatewayId` |
 | 能力 | 明确 actions / match_fields / 模板支持 |
 
 需要先决定：
@@ -165,7 +165,7 @@ SDK **不**提供策略引擎，也不替 gateway 决定 `fail_open` / `fail_clo
 
 - [ ] 首拉 200，`revision` 与策略数正确，顺序不被 SDK 重排
 - [ ] 第二次拉取带 `If-None-Match`，服务端 304 时本地快照不变
-- [ ] 空策略租户清空本地策略
+- [ ] 空策略站点清空本地策略
 - [ ] Token 无效时 401，不丢事件、不刷屏
 - [ ] NDJSON + gzip 事件被接收，`accepted/rejected` 正确
 - [ ] 413 自动拆半，单条仍 413 时丢弃并告警
@@ -184,7 +184,7 @@ SDK **不**提供策略引擎，也不替 gateway 决定 `fail_open` / `fail_clo
 
 1. **shadow**：只拉策略、只上报 observe 事件，不执行新动作；
 2. **observe**：只记录决策，不改变响应；
-3. **小流量 block**：按租户/网关灰度；
+3. **小流量 block**：按站点/网关灰度；
 4. 异常时把 `shield-x.enabled=false` 或回滚 gateway 版本。
 
 SDK 的网络/策略失败不会阻塞业务请求；但 gateway 的本地策略引擎仍需定义
@@ -210,7 +210,7 @@ SDK 的网络/策略失败不会阻塞业务请求；但 gateway 的本地策略
 
 ## 9. 已知限制
 
-- P8（429 + `Retry-After`）与 P9（跨租户隔离）在 SDK CI 中依赖服务端限流/种子策略，
+- P8（429 + `Retry-After`）与 P9（跨站点隔离）在 SDK CI 中依赖服务端限流/种子策略，
   本地 probe 会显式 Skip 或按环境执行。
 - SDK 不持久化快照；`InitialRevision` 需要 gateway 自己从磁盘恢复。
 - SDK 不保证 exactly-once；重试与 spool 补发可能重复，gateway 需要接受 at-least-once。
