@@ -10,7 +10,7 @@
 | Java | 17+ (Java 21 works) |
 | Spring Boot | 3.2.x for the starter |
 | shield-x | Deployed; base URL includes `/shieldx` |
-| Tenant | Token created; gateway ID is stable |
+| Site | Token created; gateway ID is stable |
 | Capabilities | Actions, match fields and template support are known |
 
 Decide:
@@ -161,7 +161,7 @@ The SDK does not provide a policy engine or choose `fail_open` / `fail_closed`.
 
 1. **Shadow**: pull policies and report observe-only events.
 2. **Observe**: record decisions without changing responses.
-3. **Small block rollout**: by tenant/gateway.
+3. **Small block rollout**: by site/gateway.
 4. On failure set `shield-x.enabled=false` or roll back the gateway.
 
 SDK network failures must not block business requests. The gateway still defines
@@ -183,7 +183,7 @@ Alert on:
 
 ## 9. Known limitations
 
-- P8 (429 + `Retry-After`) and P9 (tenant isolation) depend on server rate limiting/seeded policies.
+- P8 (429 + `Retry-After`) and P9 (site isolation) depend on server rate limiting/seeded policies.
 - The SDK does not persist snapshots; restore `InitialRevision` from gateway storage.
 - Delivery is at-least-once; retries/spool may duplicate events.
 - The artifact is private during preview; publishing is not done yet.

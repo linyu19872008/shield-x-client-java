@@ -108,4 +108,29 @@ class ShieldXConfigTest {
     assertThat(config.maxResponseBytes()).isEqualTo(32L * 1024 * 1024);
     assertThat(config.userAgent()).startsWith("shield-x-client-java/");
   }
+
+  @Test
+  void gatewayGroupIsOptionalAndValidated() {
+    ShieldXConfig ok =
+        ShieldXConfig.builder()
+            .baseUrl("http://localhost:8080/shieldx")
+            .token("sx_test")
+            .gatewayId("gw")
+            .gatewayGroup("blue")
+            .agentVersion("gateway/1.0")
+            .build();
+    assertThat(ok.gatewayGroup()).isEqualTo("blue");
+
+    assertThatThrownBy(
+            () ->
+                ShieldXConfig.builder()
+                    .baseUrl("http://localhost:8080/shieldx")
+                    .token("sx_test")
+                    .gatewayId("gw")
+                    .gatewayGroup("x".repeat(65))
+                    .agentVersion("gateway/1.0")
+                    .build())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("gatewayGroup");
+  }
 }

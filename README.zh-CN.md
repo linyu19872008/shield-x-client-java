@@ -32,7 +32,7 @@
 
 - Java 17+（Java 21 可直接使用）
 - Maven 3.9+（仓库自带 `mvnw`）
-- 已部署的 shield-x 与租户 Token
+- 已部署的 shield-x 与站点 Token
 
 ## 安装
 
@@ -84,7 +84,7 @@ try (Poller poller = Poller.builder(client)
 
 - at-least-once：重试与 spool 补发可能产生重复事件；`event_id` 由网关生成且必须稳定。
 - 队列满丢最旧并计入 `dropped`；400 丢弃该批；413 自动拆半；429/5xx/网络按策略退避或落 spool。
-- 采样租户的 `accepted + rejected` 可能小于发送数，不能当成 SDK 丢数据。
+- 采样站点的 `accepted + rejected` 可能小于发送数，不能当成 SDK 丢数据。
 
 ## Spring Boot Starter
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Self-contained contract probe: build shield-x + client-go from source, start a real
-# server, seed tenants, then run the Java raw-HTTP probe.
+# server, seed sites, then run the Java raw-HTTP probe.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -55,7 +55,7 @@ curl -sf "$AGENT/healthz" >/dev/null || {
   exit 1
 }
 
-echo "== login / tenants =="
+echo "== login / sites =="
 LOGIN="$(curl -sS -c "$JAR" -X POST "$CONSOLE/auth/login" \
   -H 'Content-Type: application/json' \
   -d '{"username":"super_admin","password":"Passw0rd!123"}')"
@@ -68,25 +68,25 @@ LOGIN="$(curl -sS -c "$JAR" -X POST "$CONSOLE/auth/login" \
   -d '{"username":"super_admin","password":"Probe!Passw0rd123"}')"
 CSRF="$(printf '%s' "$LOGIN" | python3 -c 'import sys,json;print(json.load(sys.stdin)["csrf_token"])')"
 
-create_tenant() {
-  curl -sS -b "$JAR" -X POST "$CONSOLE/tenants" \
+create_site() {
+  curl -sS -b "$JAR" -X POST "$CONSOLE/sites" \
     -H "X-CSRF-Token: $CSRF" -H 'Content-Type: application/json' \
     -d "{\"name\":\"$1\",\"generate_token\":true}"
 }
-A="$(create_tenant java-probe-a)"
-B="$(create_tenant java-probe-b)"
-C="$(create_tenant java-probe-c)"
-ID_A="$(printf '%s' "$A" | python3 -c 'import sys,json;print(json.load(sys.stdin)["tenant"]["id"])')"
-ID_B="$(printf '%s' "$B" | python3 -c 'import sys,json;print(json.load(sys.stdin)["tenant"]["id"])')"
+A="$(create_site java-probe-a)"
+B="$(create_site java-probe-b)"
+C="$(create_site java-probe-c)"
+ID_A="$(printf '%s' "$A" | python3 -c 'import sys,json;print(json.load(sys.stdin)["site"]["id"])')"
+ID_B="$(printf '%s' "$B" | python3 -c 'import sys,json;print(json.load(sys.stdin)["site"]["id"])')"
 TOK_A="$(printf '%s' "$A" | python3 -c 'import sys,json;print(json.load(sys.stdin)["token_plaintext"])')"
 TOK_B="$(printf '%s' "$B" | python3 -c 'import sys,json;print(json.load(sys.stdin)["token_plaintext"])')"
 TOK_C="$(printf '%s' "$C" | python3 -c 'import sys,json;print(json.load(sys.stdin)["token_plaintext"])')"
 
 echo "== seed policies =="
-curl -sS -b "$JAR" -X POST "$CONSOLE/tenants/$ID_A/policies" \
+curl -sS -b "$JAR" -X POST "$CONSOLE/sites/$ID_A/policies" \
   -H "X-CSRF-Token: $CSRF" -H 'Content-Type: application/json' \
   -d '{"name":"probe-a","priority":100,"match":{"all":[{"field":"ip","op":"in_cidr","value":["203.0.113.0/24"]}]},"action":{"type":"observe"}}' >/dev/null
-curl -sS -b "$JAR" -X POST "$CONSOLE/tenants/$ID_B/policies" \
+curl -sS -b "$JAR" -X POST "$CONSOLE/sites/$ID_B/policies" \
   -H "X-CSRF-Token: $CSRF" -H 'Content-Type: application/json' \
   -d '{"name":"probe-b","priority":100,"match":{"all":[{"field":"path","op":"prefix","value":"/probe-b"}]},"action":{"type":"observe"}}' >/dev/null
 

@@ -27,4 +27,4 @@ shield-x contract first. Add or update fixtures and the contract probe together.
 - Keep changes focused; avoid mixing refactors with behavior changes.
 - Add tests for new behavior and failure paths.
 - Update `CHANGELOG.md` for user-visible changes.
-- Do not commit tokens, private keys, tenant data, or `.codegraph/`.
+- Do not commit tokens, private keys, site data, or `.codegraph/`.

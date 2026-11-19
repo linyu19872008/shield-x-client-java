@@ -27,6 +27,7 @@ public final class ShieldXConfig {
   private final String baseUrl;
   private final Supplier<String> tokenSupplier;
   private final String gatewayId;
+  private final String gatewayGroup;
   private final String agentVersion;
   private final Capabilities capabilities;
   private final HttpClient httpClient;
@@ -43,6 +44,7 @@ public final class ShieldXConfig {
     if (!GATEWAY_ID.matcher(gatewayId).matches()) {
       throw new IllegalArgumentException("gatewayId must be 1..64 characters of [A-Za-z0-9._-]");
     }
+    this.gatewayGroup = normalizeGatewayGroup(builder.gatewayGroup);
     this.agentVersion = requireText(builder.agentVersion, "agentVersion");
     this.capabilities = builder.capabilities;
     if (capabilities != null) {
@@ -97,6 +99,11 @@ public final class ShieldXConfig {
 
   public String gatewayId() {
     return gatewayId;
+  }
+
+  /** Optional site-local gateway group; empty means ungrouped. */
+  public String gatewayGroup() {
+    return gatewayGroup;
   }
 
   public String agentVersion() {
@@ -199,6 +206,22 @@ public final class ShieldXConfig {
     return value.trim();
   }
 
+  private static String normalizeGatewayGroup(String value) {
+    if (value == null) {
+      return "";
+    }
+    String trimmed = value.trim();
+    if (trimmed.length() > 64) {
+      throw new IllegalArgumentException("gatewayGroup must not exceed 64 characters");
+    }
+    for (int i = 0; i < trimmed.length(); i++) {
+      if (Character.isISOControl(trimmed.charAt(i))) {
+        throw new IllegalArgumentException("gatewayGroup must not contain control characters");
+      }
+    }
+    return trimmed;
+  }
+
   private static Duration positive(Duration value, String name) {
     if (value == null || value.isZero() || value.isNegative()) {
       throw new IllegalArgumentException(name + " must be positive");
@@ -211,6 +234,7 @@ public final class ShieldXConfig {
     private String token;
     private Supplier<String> tokenSupplier;
     private String gatewayId;
+    private String gatewayGroup;
     private String agentVersion;
     private Capabilities capabilities;
     private HttpClient httpClient;
@@ -240,6 +264,11 @@ public final class ShieldXConfig {
 
     public Builder gatewayId(String value) {
       this.gatewayId = value;
+      return this;
+    }
+
+    public Builder gatewayGroup(String value) {
+      this.gatewayGroup = value;
       return this;
     }
 

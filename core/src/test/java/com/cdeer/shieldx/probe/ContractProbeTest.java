@@ -54,7 +54,7 @@ class ContractProbeTest {
     HttpResponse<String> response = get("/policies/v1", TOKEN);
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode policies = MAPPER.readTree(response.body()).get("policies");
-    assumeTrue(policies != null && policies.size() > 0, "tenant needs at least one policy");
+    assumeTrue(policies != null && policies.size() > 0, "site needs at least one policy");
     assertThat(response.headers().firstValue("ETag")).isPresent();
   }
 
@@ -71,8 +71,8 @@ class ContractProbeTest {
   }
 
   @Test
-  void p4EmptyTenantReturnsEmptyPolicies() throws Exception {
-    assumeTrue(EMPTY_TOKEN != null && !EMPTY_TOKEN.isBlank(), "empty tenant token not set");
+  void p4EmptySiteReturnsEmptyPolicies() throws Exception {
+    assumeTrue(EMPTY_TOKEN != null && !EMPTY_TOKEN.isBlank(), "empty site token not set");
     HttpResponse<String> response = get("/policies/v1", EMPTY_TOKEN);
     assertThat(response.statusCode()).isEqualTo(200);
     JsonNode policies = MAPPER.readTree(response.body()).get("policies");
@@ -105,11 +105,11 @@ class ContractProbeTest {
   }
 
   @Test
-  void p9TenantIsolation() throws Exception {
-    assumeTrue(TOKEN_B != null && !TOKEN_B.isBlank(), "second tenant token not set");
+  void p9SiteIsolation() throws Exception {
+    assumeTrue(TOKEN_B != null && !TOKEN_B.isBlank(), "second site token not set");
     Set<String> idsA = policyIds(TOKEN);
     Set<String> idsB = policyIds(TOKEN_B);
-    assumeTrue(!idsA.isEmpty() && !idsB.isEmpty(), "both tenants need policies");
+    assumeTrue(!idsA.isEmpty() && !idsB.isEmpty(), "both sites need policies");
     idsA.retainAll(idsB);
     assertThat(idsA).isEmpty();
   }
