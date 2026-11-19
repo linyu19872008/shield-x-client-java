@@ -452,6 +452,11 @@ public final class ShieldXClient {
       return this;
     }
 
+    public Builder gatewayGroup(String value) {
+      config.gatewayGroup(value);
+      return this;
+    }
+
     public Builder agentVersion(String value) {
       config.agentVersion(value);
       return this;
